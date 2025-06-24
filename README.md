@@ -5,7 +5,7 @@
 ## 🔗 Links
 
 - 💬 **Join my Discord**: [discord.gg/75W6mXRh5f](https://discord.gg/75W6mXRh5f)
-- 🚀 **Information about my Discord Channel**: [X-Core:Nexus](https://github.com/DevXstyler/X-Core:Nexus)
+- 🚀 **Information about my Discord Channel**: [X-Core:Nexus](https://github.com/DevXstyler/X-Core-Nexus)
 
 ---
 
