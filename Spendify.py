@@ -7,37 +7,12 @@ import json
 USERDATA_DIR = os.path.join(os.path.expanduser("~"), ".spendifiy")
 USERDATA_FILE = os.path.join(USERDATA_DIR, "userdata.json")
 
-
-
 #initialize tkinter
 root = Tk()
 root.configure(bg="black")
 
-
-
-
 selected_currency = StringVar()
 selected_currency.set("US Dollar")  # Default currency
-
-def save_userdata():
-    data = {
-        "table_data": table_data,
-        "selected_currency": selected_currency.get()
-    }
-    os.makedirs(USERDATA_DIR, exist_ok=True)
-    with open(USERDATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-def load_userdata():
-    if os.path.exists(USERDATA_FILE):
-        with open(USERDATA_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            table_data.clear()
-            table_data.extend(data.get("table_data", []))
-            if "selected_currency" in data:
-                selected_currency.set(data["selected_currency"])
-            return True
-    return False
 
 # --- Currency formatting and storage ---
 currency_formats = {
@@ -50,8 +25,28 @@ currency_formats = {
 }
 currency_options = list(currency_formats.keys())
 table_data = []  # [{'item':..., 'value':...}]
+total_label = None  # Label for total price
 
+def save_userdata():
+    data = {
+        "table_data": table_data,
+        "selected_currency": selected_currency.get()
+    }
+    os.makedirs(USERDATA_DIR, exist_ok=True)
+    with open(USERDATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    CreatePriceOverall()  # Update total price label after saving
 
+def load_userdata():
+    if os.path.exists(USERDATA_FILE):
+        with open(USERDATA_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            table_data.clear()
+            table_data.extend(data.get("table_data", []))
+            if "selected_currency" in data:
+                selected_currency.set(data["selected_currency"])
+            return True
+    return False
 
 # Set the title of the window
 root.title("Spendify")
@@ -138,6 +133,24 @@ def CreateLabel():
     label = ttk.Label(frm, text=Welcome, background="black", foreground="white", font=("Arial", 14), anchor="center")
     label.grid(column=0, row=1, columnspan=2, sticky="w", pady=10, ipadx=10, ipady=2)
 
+def CreatePriceOverall():
+    global total_label
+    total = sum(entry['value'] for entry in table_data)
+    currency = selected_currency.get()
+    fmt = currency_formats[currency]
+    if total_label is None:
+        total_label = ttk.Label(frm, text=f"Total: {fmt(total)}", background="black", foreground="white", font=("Arial", 12))
+        total_label.grid(column=0, row=6, columnspan=2, pady=10, sticky="w")
+    else:
+        total_label.config(text=f"Total: {fmt(total)}")
+    
+    # Update the label when the currency changes
+    def update_total(*args):
+        total = sum(entry['value'] for entry in table_data)
+        total_label.config(text=f"Total: {fmt(total)}")
+    
+    selected_currency.trace("w", update_total)
+
 def update_currency(*args):
     currency = selected_currency.get()
     fmt = currency_formats[currency]
@@ -146,10 +159,7 @@ def update_currency(*args):
     save_userdata()
 
 def CreateDropdown():
-    global selected_currency
-    selected_currency = StringVar()
-    selected_currency.set(currency_options[0])
-    dropdown = ttk.OptionMenu(frm, selected_currency, currency_options[0], *currency_options, command=update_currency)
+    dropdown = ttk.OptionMenu(frm, selected_currency, selected_currency.get(), *currency_options, command=update_currency)
     dropdown.grid(column=0, row=5, columnspan=2, pady=10, sticky="w")
     dropdown.configure(width=30, style="Custom.TButton")
 
@@ -188,8 +198,9 @@ def open_add_item_window():
                 height=2
             ).pack(pady=5)
             return
+        price = price.replace(",", ".")
         try:
-            price_int = int(price)
+            price_float = float(price)
         except ValueError:
             err_win_invalid_type = Toplevel(root)
             err_win_invalid_type.title("Error - Invalid Type")
@@ -208,27 +219,9 @@ def open_add_item_window():
                 height=2
             ).pack(pady=5)
             return
-        if not item.isalpha():
-            err_win_invalid_type = Toplevel(root)
-            err_win_invalid_type.title("Error - Invalid Item")
-            err_win_invalid_type.configure(bg="red")
-            err_win_invalid_type.geometry("380x200")
-            err_win_invalid_type.resizable(False, False)
-            Label(err_win_invalid_type, text="Invalid Item! Name must only contain letters.", bg="red", fg="white", font=("Arial", 12, "bold")).pack(pady=20)
-            Button(
-                err_win_invalid_type,
-                text="Okay",
-                command=err_win_invalid_type.destroy,
-                bg="#444444",
-                fg="white",
-                font=("Arial", 11, "bold"),
-                width=12,
-                height=2
-            ).pack(pady=5)
-            return
-        table_data.append({'item': item, 'value': price_int})
+        table_data.append({'item': item, 'value': price_float})
         fmt = currency_formats[selected_currency.get()]
-        tree.insert("", "end", values=(item, fmt(price_int)), tags=('filled',))
+        tree.insert("", "end", values=(item, fmt(price_float)), tags=('filled',))
         save_userdata()
         add_win.destroy()
     add_btn = Button(add_win, text="Add", command=add_to_table, bg="#444444", fg="white")
@@ -280,7 +273,9 @@ def edit_selected_item():
                 current_price = current_price[len(fmt_val):]
             elif current_price.endswith(fmt_val):
                 current_price = current_price[:-len(fmt_val)]
-        current_price = ''.join(filter(str.isdigit, current_price))
+        # Allow all characters for price, just replace comma and keep digits, dot
+        current_price = current_price.replace(",", ".")
+        current_price = ''.join(c for c in current_price if (c.isdigit() or c == "."))
 
         edit_win = Toplevel(root)
         edit_win.title("Edit Values")
@@ -320,8 +315,9 @@ def edit_selected_item():
                     height=2
                 ).pack(pady=5)
                 return
+            new_price = new_price.replace(",", ".")
             try:
-                price_int = int(new_price)
+                price_float = float(new_price)
             except ValueError:
                 err_win_invalid_type = Toplevel(root)
                 err_win_invalid_type.title("Error - Invalid Type")
@@ -340,28 +336,10 @@ def edit_selected_item():
                     height=2
                 ).pack(pady=5)
                 return
-            if not new_item.isalpha():
-                err_win_invalid_type = Toplevel(root)
-                err_win_invalid_type.title("Error - Invalid Item")
-                err_win_invalid_type.configure(bg="red")
-                err_win_invalid_type.geometry("380x200")
-                err_win_invalid_type.resizable(False, False)
-                Label(err_win_invalid_type, text="Invalid Item! Name must only contain letters.", bg="red", fg="white", font=("Arial", 12, "bold")).pack(pady=20)
-                Button(
-                    err_win_invalid_type,
-                    text="Okay",
-                    command=err_win_invalid_type.destroy,
-                    bg="#444444",
-                    fg="white",
-                    font=("Arial", 11, "bold"),
-                    width=12,
-                    height=2
-                ).pack(pady=5)
-                return
             # Update table_data and tree
-            table_data[idx] = {'item': new_item, 'value': price_int}
+            table_data[idx] = {'item': new_item, 'value': price_float}
             fmt = currency_formats[selected_currency.get()]
-            tree.item(selected, values=(new_item, fmt(price_int)))
+            tree.item(selected, values=(new_item, fmt(price_float)))
             save_userdata()
             edit_win.destroy()
 
@@ -410,6 +388,7 @@ def CreateButtons():
     CreateButtonClose() 
 
 CreateTable() 
+CreatePriceOverall()
 CreateLabel()
 CreateButtons()
 CreateDropdown()
@@ -421,4 +400,4 @@ style.configure("Black.TFrame", background="black")
 #mainloop (this keeps the window open)
 root.mainloop()
 
-#ToDo:logo - currency converter - stück berechnung - monat ausgaben mehr/weniger
+#ToDo:logo - currency converter - stück berechnung - monat ausgaben mehr/weniger•
