@@ -205,6 +205,110 @@ def delete_selected_item():
     else:
         print("Deleted item:", selected)
         tree.delete(selected)
+ 
+ 
+
+def  edit_selected_item():
+    
+    selected = tree.selection()
+    if not tree.selection(): # if NO selection
+        no_selection_win = Toplevel(root)
+        no_selection_win.title("Error - No Selection")
+        no_selection_win.configure(bg="red")
+        no_selection_win.geometry("380x200")
+        no_selection_win.resizable(False, False)
+        Label(no_selection_win, text="Please select an item to edit.", bg="red", fg="white", font=("Arial", 12, "bold")).pack(pady=20)
+        Button(
+            no_selection_win,
+            text="Okay",
+            command=no_selection_win.destroy,
+            bg="#444444",
+            fg="white",
+            font=("Arial", 11, "bold"),
+            width=12,
+            height=2
+        ).pack(pady=5)
+        return
+    else: #if there IS a selection
+            selected = tree.selection()
+            values = tree.item(selected, 'values') #get selected + values
+            print(values)
+            item_edit = values[0] #item
+            price_edit = values[1] #price
+
+            edit_win = Toplevel(root)
+            edit_win.title("Edit Values")
+            edit_win.configure(bg="black")
+            edit_win.geometry("380x200")
+            edit_win.resizable(False, False)
+            Label(edit_win, text="Please fill in all fields.", bg="red", fg="white", font=("Arial", 12, "bold")).pack(pady=20)
+            Button(
+                edit_win,
+                text="Okay",
+                command=edit_win.destroy,
+                bg="#444444",
+                fg="white",
+                font=("Arial", 11, "bold"),
+                width=12,
+                height=2
+            ).pack(pady=5)
+            return
+
+            # Check if prize is a valid integer and item is a string
+            try:
+                prize_int = int(prize)
+            except ValueError:
+                err_win_invalid_type = Toplevel(root)
+                err_win_invalid_type.title("Error - Invalid Type")
+                err_win_invalid_type.configure(bg="red")
+                err_win_invalid_type.geometry("380x200")
+                err_win_invalid_type.resizable(False, False)
+                
+                Label(add_win, text="Item:", bg="black", fg="white").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+                item_edit = Entry(add_win)
+                item_edit.grid(row=0, column=1, padx=10, pady=5)
+                Label(add_win, text="Price:", bg="black", fg="white").grid(row=1, column=0, padx=10, pady=5, sticky="w")
+                price_edit = Entry(add_win)
+                price_edit.grid(row=1, column=1, padx=10, pady=5)
+                Button(
+                    err_win_invalid_type,
+                    text="Okay",
+                    command=err_win_invalid_type.destroy,
+                    bg="#444444",
+                    fg="white",
+                    font=("Arial", 11, "bold"),
+                    width=12,
+                    height=2
+                ).pack(pady=5)
+                return
+
+            # Optional: Check if item is only letters (no numbers)
+            if not item.isalpha(): # isalpha checks if all characters are letters
+                err_win_invalid_type = Toplevel(root)
+                err_win_invalid_type.title("Error - Invalid Item")
+                err_win_invalid_type.configure(bg="red")
+                err_win_invalid_type.geometry("380x200")
+                err_win_invalid_type.resizable(False, False)
+                Label(err_win_invalid_type, text="Invalid Item! Name must only contain letters.", bg="red", fg="white", font=("Arial", 12, "bold")).pack(pady=20)
+                Button(
+                    err_win_invalid_type,
+                    text="Okay",
+                    command=err_win_invalid_type.destroy,
+                    bg="#444444",
+                    fg="white",
+                    font=("Arial", 11, "bold"),
+                    width=12,
+                    height=2
+                ).pack(pady=5)
+                return
+
+            # If all checks pass, insert into table
+            tree.insert("", "end", values=(item, prize_int), tags=('filled',))
+            add_win.destroy()
+        
+ 
+ 
+ 
         
 def CreateButtons():
     global style
@@ -227,7 +331,7 @@ def CreateButtons():
         delete_button.grid(column=1, row=3, sticky="w", padx=5, pady=5)
 
     def CreatebuttonEdit():
-        edit_button = ttk.Button(frm, text="Edit Item", style="Custom.TButton", command=lambda: print("Edit Item Button Clicked"),  width=12)
+        edit_button = ttk.Button(frm, text="Edit Item", style="Custom.TButton", command=edit_selected_item,  width=12)
         edit_button.grid(column=0, row=4, sticky="w", padx=10, pady=5)
 
     def CreateButtonClose():
