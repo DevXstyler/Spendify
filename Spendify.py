@@ -44,7 +44,7 @@ currency_options = list(currency_formats.keys())
 table_data = []  # [{'item':..., 'value':...}]
 total_label = None  # Label for total price
 
-# --- Monatswechsel prüfen und Daten laden ---
+# --- Check Month-Change ---
 last_month_data = load_last_month_data()
 current_month = get_current_month()
 
@@ -108,7 +108,7 @@ frm = ttk.Frame(root, padding=10)
 frm.grid(column=0, row=0, sticky=(N, W, E, S))
 frm.grid()
 
-# Tabelle mit weißem Rahmen
+# Table
 table_frame = Frame(frm, bg="white", bd=2)
 table_frame.grid(column=0, row=2, columnspan=2, padx=5, pady=5)
 
@@ -123,8 +123,7 @@ def CreateTable():
     tree.heading("Price", text="Price")
     tree.column("Item", width=80, anchor="center")
     tree.column("Price", width=120, anchor="w")
-
-    # Style anpassen
+    
     style = ttk.Style()
     style.theme_use("default")
     style.configure("Treeview", 
@@ -164,7 +163,7 @@ def CreateTable():
     style.map("Treeview", background=[("selected", "#333333")])
     tree.tag_configure('filled', background="#181818")
 
-    # Beispiel-Daten einfügen mit Tag für belegte Zeilen
+    # If no user data then load prepared data
     table_data.clear()
     if not load_userdata():
         fmt = currency_formats["US Dollar"]
@@ -187,7 +186,7 @@ def CreatePriceOverall():
     total = sum(entry['value'] for entry in table_data)
     currency = selected_currency.get()
     fmt = currency_formats[currency]
-    # Abschneiden auf 2 Nachkommastellen (ohne Runden)
+    # Round
     total_str = str(total)
     if "." in total_str:
         ganz, nachkomma = total_str.split(".")
@@ -443,7 +442,7 @@ def CurrencyConvert():
     result_entry = Entry(convert_win, textvariable=result_var, state="readonly", width=25, justify="center")
     result_entry.grid(row=4, column=0, columnspan=2, padx=10, pady=10)
 
-    # Beispiel-Wechselkurse (kannst du anpassen)
+    # Money and how much it's worth (not updated)
     rates = {
         ("US Dollar", "Euro"): 0.93,
         ("Euro", "US Dollar"): 1.08,
@@ -468,7 +467,7 @@ def CurrencyConvert():
         root.clipboard_clear()
         root.clipboard_append(copied_value)
         result_var.set("Copied!")
-        # Nach 1 Sekunde wieder das Ergebnis anzeigen
+        # show result after 1sec
         convert_win.after(1000, lambda: result_var.set(copied_value))
         
     def convert():
@@ -488,7 +487,7 @@ def CurrencyConvert():
             result_var.set("No rate available!")
             return
         result = amount * rate
-        # Abschneiden auf 2 Nachkommastellen (ohne Runden)
+        # Round
         result_str = str(result)
         if "." in result_str:
             ganz, nachkomma = result_str.split(".")
@@ -567,4 +566,5 @@ style = ttk.Style()
 style.configure("Black.TFrame", background="black")
 
 #mainloop (this keeps the window open)
+
 root.mainloop()
